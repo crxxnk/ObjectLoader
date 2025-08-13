@@ -18,9 +18,9 @@ struct Texture
 
 struct Face
 {
-    Vertex vertex;
-    Texture texture;
-    Normal normal;
+    std::vector<Vertex> vertices;
+    std::vector<Normal> normals;
+    std::vector<Texture> textures;
 };
 
 struct Mesh

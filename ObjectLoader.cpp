@@ -20,6 +20,39 @@ void ObjLoader::parseVertex(const std::string &line)
     std::clog << "[INFO] Parsing vertex..." << std::endl;
 }
 
+void ObjLoader::parseFace(const std::string &line)
+{
+    //! Face index starts at 1
+    Face face;
+    std::stringstream ss(line);
+    std::string prefix; // skip 'f'
+    std::string data;
+    char slash;
+    int vertexIndex, textureIndex, normalIndex;
+
+    ss >> prefix;
+    std::string vertexData;
+
+    while(ss >> vertexData)
+    {
+        int vIndex = 0, tIndex = 0, nIndex = 0;
+        std::stringstream vss(vertexData);
+
+        vss >> vIndex >> slash >> tIndex >> slash >> nIndex;
+
+        try{
+            face.vertices.push_back(mesh.vertices.at(vIndex - 1));
+            face.textures.push_back(mesh.textures.at(tIndex - 1));
+            face.normals.push_back(mesh.normals.at(nIndex - 1));
+        } catch(const std::out_of_range& e) {
+            std::cerr << "[ERROR] Face Index out of bounds " << e.what() << std::endl;
+        }
+    }
+    mesh.faces.push_back(face);
+
+    std::clog << "[INFO] Parsing face..." << std::endl;
+}
+
 void ObjLoader::parseNormal(const std::string &line)
 {
     Normal normal;
@@ -42,14 +75,13 @@ void ObjLoader::parseTexture(const std::string &line)
 
 bool ObjLoader::load(const std::string &path)
 {
-    std::ifstream f(path);
-    if(!f) {
-        std::cerr << "[ERROR] Cannot open file: " << path << std::endl;
-        return false;
-    }
+    std::ifstream file(path);
+    if(!file)
+        throw std::runtime_error("[EXCEPTION] Cannot open file.");
+
     std::clog << "[INFO] Loading file: " << path << std::endl;
     std::string line;
-    while(std::getline(f, line) && line[0]) 
+    while(std::getline(file, line) && line[0]) 
     {
         if(line.empty() || line[0] == '#') continue;
         if(line[0] == VERTEX_PREFIX && line[1] != NORMAL_PREFIX && line[1] != TEXTURE_PREFIX)
@@ -58,7 +90,8 @@ bool ObjLoader::load(const std::string &path)
             parseNormal(line);
         else if(line[0] == VERTEX_PREFIX && line[1] == TEXTURE_PREFIX)
             parseTexture(line);
-        // TODO Add parsing for faces
+        else if(line[0] == FACE_PREFIX)
+            parseFace(line);
     }
     std::clog << "[INFO] Finished Loading." << std::endl;
     return true;
