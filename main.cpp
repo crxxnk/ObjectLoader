@@ -11,23 +11,18 @@ int main()
     } catch(const std::exception &e) {
         std::cout << e.what() << std::endl;
     }
-    // for (auto &v : loader->getVertices())
-    //     std::cout << v.x << " " << v.y << " " << v.z << std::endl;
 
-    // for (auto &v : loader->getTextures())
-    //     std::cout << v.u << " " << v.v << std::endl;
-
-    // for (auto &v : loader->getNormals())
-    //     std::cout << v.x << " " << v.y << " " << v.z << std::endl;
-
-    for (const auto& f : loader->getFaces()) {
-        std::cout << "Face:" << std::endl;
-        for (const auto& v : f.vertices)
-            std::cout << "  Vertex: " << v.x << " " << v.y << " " << v.z << std::endl;
-        for (const auto& t : f.textures)
-            std::cout << "  Texture: " << t.u << " " << t.v << std::endl;
-        for (const auto& n : f.normals)
-            std::cout << "  Normal: " << n.x << " " << n.y << " " << n.z << std::endl;
+    for (const auto& g : loader->getGroups()) {
+        std::cout << "Group " << g.name << ": "<< std::endl;
+        for(size_t index : g.faceIndices) {
+            const Face& f = loader->getFaces()[index];
+            for (const auto& v : f.vertices)
+                std::cout << "  Vertex: " << v.x << " " << v.y << " " << v.z << std::endl;
+            for (const auto& t : f.textures)
+                std::cout << "  Texture: " << t.u << " " << t.v << std::endl;
+            for (const auto& n : f.normals)
+                std::cout << "  Normal: " << n.x << " " << n.y << " " << n.z << std::endl;
+        }
     }
 
     return 0;

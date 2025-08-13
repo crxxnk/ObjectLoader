@@ -9,9 +9,12 @@ struct Texture;
 class ObjLoader : public ModelLoader
 {
 public:
-    bool load(const std::string &path) override;
+    void load(const std::string &path) override;
     void parseVertex(const std::string &line);
-    void parseFace(const std::string &line);
     void parseNormal(const std::string &line);
     void parseTexture(const std::string &line);
+    void parseGroup(const std::string &line);
+    void parseObject(const std::string &line);
+    void parseSmoothing(const std::string &line);
+    int parseFace(const std::string &line);
 };
