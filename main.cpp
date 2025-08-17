@@ -1,6 +1,5 @@
 #include "ObjectLoader.h"
 #include "ObjectLoader.cpp"
-#include <memory>
 
 int main()
 {
@@ -14,13 +13,12 @@ int main()
 
     for (const auto& g : loader->getGroups()) {
         std::cout << "Group " << g.name << ": "<< std::endl;
-        for(size_t index : g.faceIndices) {
-            const Face& f = loader->getFaces()[index];
-            for (const auto& v : f.vertices)
+        for(auto f : g.faces) {
+            for (const auto& v : f->vertices)
                 std::cout << "  Vertex: " << v.x << " " << v.y << " " << v.z << std::endl;
-            for (const auto& t : f.textures)
+            for (const auto& t : f->textures)
                 std::cout << "  Texture: " << t.u << " " << t.v << std::endl;
-            for (const auto& n : f.normals)
+            for (const auto& n : f->normals)
                 std::cout << "  Normal: " << n.x << " " << n.y << " " << n.z << std::endl;
         }
     }

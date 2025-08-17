@@ -26,27 +26,26 @@ struct Face
 struct Group
 {
     std::string name;
-    std::vector<size_t> faceIndices;
+    std::vector<std::shared_ptr<Face>> faces;
 };
 
 struct Object
 {
     std::string name;
-    std::vector<size_t> faceIndices;
-    //std::vector<Face*> faces; //! Maybe will add pointers instead of index later
+    std::vector<std::shared_ptr<Face>> faces;
     std::vector<Group> groups;
 };
 
 struct Smoothing
 {
     int smoothness;
-    std::vector<size_t> faceIndices;
+    std::vector<std::shared_ptr<Face>> faces;
 };
 
 struct Mesh
 {
     std::vector<Vertex> vertices;
-    std::vector<Face> faces;
+    std::vector<std::shared_ptr<Face>> faces;
     std::vector<Normal> normals;
     std::vector<Texture> textures;
     std::vector<Group> groups;

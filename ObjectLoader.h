@@ -16,5 +16,9 @@ public:
     void parseGroup(const std::string &line);
     void parseObject(const std::string &line);
     void parseSmoothing(const std::string &line);
-    int parseFace(const std::string &line);
+    std::shared_ptr<Face> parseFace(const std::string &line);
+    template<typename T>
+    const std::optional<T> parseElement(const std::string &line);
+    template<typename T>
+    void storeElement(const std::optional<T> &element);
 };
