@@ -1,5 +1,6 @@
 #pragma once
 #include "ModelLoader.h"
+#include "Obj_Prefix.h"
 
 struct Vertex;
 struct Face;
@@ -10,13 +11,13 @@ class ObjLoader : public ModelLoader
 {
 public:
     void load(const std::string &path) override;
-    void parseVertex(const std::string &line);
-    void parseNormal(const std::string &line);
-    void parseTexture(const std::string &line);
-    void parseGroup(const std::string &line);
-    void parseObject(const std::string &line);
-    void parseSmoothing(const std::string &line);
-    std::shared_ptr<Face> parseFace(const std::string &line);
+    // void parseVertex(const std::string &line);
+    // void parseNormal(const std::string &line);
+    // void parseTexture(const std::string &line);
+    // void parseGroup(const std::string &line);
+    // void parseObject(const std::string &line);
+    // void parseSmoothing(const std::string &line);
+    // std::shared_ptr<Face> parseFace(const std::string &line);
     template<typename T>
     const std::optional<T> parseElement(const std::string &line);
     template<typename T>

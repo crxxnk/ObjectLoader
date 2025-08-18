@@ -1,17 +1,23 @@
 #include "ObjectLoader.h"
 
-constexpr char VERTEX_PREFIX = 'v';
-constexpr char NORMAL_PREFIX = 'n';
-constexpr char TEXTURE_PREFIX = 't';
-constexpr char FACE_PREFIX = 'f';
-constexpr char GROUP_PREFIX = 'g';
-constexpr char OBJECT_PREFIX = 'o';
-constexpr char SMOOTHING_PREFIX = 's';
-constexpr char MATERIAL_LIB_PREFIX[7] = "mtllib";
-constexpr char MATERIAL_USE_PREFIX[7] = "usemtl";
-
 //TODO Handle faces with missing texture/normal indices
+//TODO Handle points and lines with missing texture indices
+//TODO Add v, vt, vn, vp, l, p... etc in objects and groups
+//TODO Put every parser in a function and call it in parseElement
+//TODO Make start end optional in parseCurve
+//TODO Add degree and curve type
+//TODO Do even more error handling
 
+/**
+ * @brief Parses a single line of the .obj file into the corresponding element.
+ * 
+ * Uses template specialization to determine which type of element to parse:
+ * Vertex, Normal, Texture, Smoothing, Object, Group, or Face.
+ * 
+ * @tparam T The type of element to parse.
+ * @param line The line from the .obj file.
+ * @return std::optional<T> The parsed element, or nullopt if parsing fails.
+ */
 template<typename T>
 [[nodiscard]] const std::optional<T> ObjLoader::parseElement(const std::string &line)
 {
@@ -41,6 +47,77 @@ template<typename T>
         ss >> prefix >> texture.u >> texture.v;
         std::clog << "[INFO] Parsing texture..." << std::endl;
         return texture;
+    }
+    else [[unlikely]] if constexpr (std::is_same_v<T, ParameterSpaceVertex>)
+    {
+        ParameterSpaceVertex psv;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'vp'
+        ss >> prefix >> psv.x >> psv.y >> psv.z;
+        std::clog << "[INFO] Parsing Parameter Space Vertex..." << std::endl;
+        return psv;
+    }
+    else if constexpr (std::is_same_v<T, std::shared_ptr<Point>>)
+    {
+        Point point;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'p'
+        std::string data;
+        char slash;
+        int vertexIndex, textureIndex;
+
+        ss >> prefix;
+        std::string vertexData;
+
+        while(ss >> vertexData)
+        {
+            int vIndex = 0, tIndex = 0;
+            std::stringstream vss(vertexData);
+
+            vss >> vIndex >> slash >> tIndex;
+
+            try{
+                point.vertices.push_back(mesh.vertices.at(vIndex - 1));
+                point.textures.push_back(mesh.textures.at(tIndex - 1));
+            } catch(const std::out_of_range& e) {
+                std::cerr << "[ERROR] Point Index out of bounds " << e.what() << std::endl;
+            }
+        }
+        std::shared_ptr<Point> pointPtr = std::make_shared<Point>(point);
+
+        std::clog << "[INFO] Parsing points..." << std::endl;
+        return pointPtr;
+    }
+    else if constexpr (std::is_same_v<T, std::shared_ptr<Line>>)
+    {
+        Line _line;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'p'
+        std::string data;
+        char slash;
+        int vertexIndex, textureIndex;
+
+        ss >> prefix;
+        std::string vertexData;
+
+        while(ss >> vertexData)
+        {
+            int vIndex = 0, tIndex = 0;
+            std::stringstream vss(vertexData);
+
+            vss >> vIndex >> slash >> tIndex;
+
+            try{
+                _line.vertices.push_back(mesh.vertices.at(vIndex - 1));
+                _line.textures.push_back(mesh.textures.at(tIndex - 1));
+            } catch(const std::out_of_range& e) {
+                std::cerr << "[ERROR] Line Index out of bounds " << e.what() << std::endl;
+            }
+        }
+        std::shared_ptr<Line> linePtr = std::make_shared<Line>(_line);
+
+        std::clog << "[INFO] Parsing lines..." << std::endl;
+        return linePtr;
     }
     else if constexpr (std::is_same_v<T, Smoothing>)
     {
@@ -113,9 +190,42 @@ template<typename T>
         std::clog << "[INFO] Parsing face..." << std::endl;
         return facePtr;
     }
-    else
+    else if constexpr (std::is_same_v<T, std::shared_ptr<Curve>>)
+    {
+        Curve curve;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'curv'
+        std::string data;
+        char slash;
+        int vertexIndex;
+        float start, end;
+
+        ss >> prefix >> start >> end;
+        curve.globalParameterRange.at(0) = start;
+        curve.globalParameterRange.at(1) = end;
+        std::string vertexData;
+
+        while(ss >> vertexData)
+        {
+            int vIndex = 0;
+            std::stringstream vss(vertexData);
+
+            vss >> vIndex; //! make start end optional
+
+            try{
+                curve.controlPoints.push_back(mesh.vertices.at(vIndex - 1));
+            } catch(const std::out_of_range& e) {
+                std::cerr << "[ERROR] Curve Index out of bounds " << e.what() << std::endl;
+            }
+        }
+        std::shared_ptr<Curve> curvePtr = std::make_shared<Curve>(curve);
+
+        std::clog << "[INFO] Parsing curve..." << std::endl;
+        return curvePtr;
+    }
+
+    else [[unlikely]]
         throw std::runtime_error("Cannot parse this type of element");
-    
 }
 
 template<typename T>
@@ -129,6 +239,8 @@ void ObjLoader::storeElement(const std::optional<T> &element)
         mesh.normals.push_back(*element);
     else if constexpr (std::is_same_v<T, Texture>)
         mesh.textures.push_back(*element);
+    else [[unlikely]] if constexpr (std::is_same_v<T, ParameterSpaceVertex>)
+        mesh.psvs.push_back(*element);
     else if constexpr (std::is_same_v<T, Smoothing>)
         mesh.smooths.push_back(*element);
     else if constexpr (std::is_same_v<T, Object>)
@@ -137,7 +249,13 @@ void ObjLoader::storeElement(const std::optional<T> &element)
         mesh.groups.push_back(*element);
     else if constexpr (std::is_same_v<T, std::shared_ptr<Face>>)
         mesh.faces.push_back(*element);
-    else
+    else if constexpr (std::is_same_v<T, std::shared_ptr<Point>>)
+        mesh.points.push_back(*element);
+    else if constexpr (std::is_same_v<T, std::shared_ptr<Line>>)
+        mesh.lines.push_back(*element);
+    else if constexpr (std::is_same_v<T, std::shared_ptr<Curve>>)
+        mesh.curves.push_back(*element);
+    else [[unlikely]]
         throw std::runtime_error("Cannot store this type of element");
 }
 
@@ -157,15 +275,21 @@ void ObjLoader::load(const std::string &path)
     std::optional<Vertex> vertex;
     std::optional<Normal> normal;
     std::optional<Texture> texture;
+    std::optional<ParameterSpaceVertex> psv;
     std::optional<std::shared_ptr<Face>> face;
+    std::optional<std::shared_ptr<Point>> point;
+    std::optional<std::shared_ptr<Line>> _line;
+    std::optional<std::shared_ptr<Curve>> curve;
     std::optional<Group> group;
     std::optional<Object> object;
     std::optional<Smoothing> smoothing;
 
+    // auto x = parseElement<int>("v 0.0 0.0 0.0");
+
     while(std::getline(file, line)) 
     {
         if(line.empty() || line[0] == '#') continue;
-        if(line[0] == VERTEX_PREFIX && line[1] != NORMAL_PREFIX && line[1] != TEXTURE_PREFIX) {
+        if(line[0] == VERTEX_PREFIX && line[1] != NORMAL_PREFIX && line[1] != TEXTURE_PREFIX && line[1] != POINT_PREFIX) {
             try {
                 vertex = parseElement<Vertex>(line);
                 storeElement(vertex);
@@ -263,6 +387,38 @@ void ObjLoader::load(const std::string &path)
                 std::cerr << e.what() << std::endl;
             }
             currentSmoothing = &mesh.smooths.back();
+        }
+        else [[unlikely]] if(line[0] == VERTEX_PREFIX && line[1] == POINT_PREFIX) {
+            try {
+                psv = parseElement<ParameterSpaceVertex>(line);
+                storeElement(psv);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        else if(line[0] == POINT_PREFIX) {
+            try {
+                point = parseElement<std::shared_ptr<Point>>(line);
+                storeElement(point);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        else if(line[0] == LINE_PREFIX) {
+            try {
+                _line = parseElement<std::shared_ptr<Line>>(line);
+                storeElement(_line);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        else if (line.rfind(CURVE_PREFIX, 0) == 0) {
+            try {
+                curve = parseElement<std::shared_ptr<Curve>>(line);
+                storeElement(curve);
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
         }
     }
 
