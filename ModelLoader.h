@@ -8,12 +8,15 @@
 #include <memory>
 #include <optional>
 #include <concepts>
+#include "Logger.h"
+#include "Logger.cpp"
 #include "Mesh.h"
 
 class ModelLoader
 {
 public:
     Mesh mesh;
+    Logger &logger = Logger::getInstance();
     virtual ~ModelLoader() = default;
     virtual void load(const std::string &path) = 0;
     const std::vector<Vertex> &getVertices() const { return this->mesh.vertices; }

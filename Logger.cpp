@@ -25,6 +25,7 @@ std::string Logger::levelToString(Level level)
         case WARNING: return "WARNING";
         case ERROR: return "ERROR";
         case DEBUG: return "DEBUG";
+        case NONE: return "";
         default: return "UNKNOWN";
     }
 }
@@ -38,12 +39,31 @@ Logger &Logger::getInstance(const std::string &file)
 void Logger::log(const std::string &message, Level level)
 {
     std::lock_guard<std::mutex> guard(logMutex);
+    std::string logEntry;
 
-    std::string logEntry = "[" + getTimestamp() + "] [" + levelToString(level) + "] " + message;
+    if(level != NONE)
+        logEntry = "[" + getTimestamp() + "] [" + levelToString(level) + "] " + message;
+    else
+        logEntry = message;
+    
+    if(level == ERROR)
+        errors++;
+    else if(level == WARNING)
+        warnings++;
+    else if(level == DEBUG)
+        debugMessages++;
+    else if(level == INFO)
+        infoMessages++;
 
     std::cout << logEntry << std::endl;
     
     logfile << logEntry << std::endl;
+}
+
+void Logger::logFinish()
+{
+    log("Compilation finished with " + std::to_string(getErrors()) + " errors, " + std::to_string(getWarnings()) + " warnings, "
+    + std::to_string(getDebugMessages()) + " debug messages, " + std::to_string(getInfoMessages()) + " info messages.", NONE);
 }
 
 Logger::~Logger()

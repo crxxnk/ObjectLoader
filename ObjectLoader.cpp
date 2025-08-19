@@ -5,7 +5,6 @@
 //TODO Add v, vt, vn, vp, l, p... etc in objects and groups
 //TODO Put every parser in a function and call it in parseElement
 //TODO Add curve type and additional parameters
-//TODO Add logging in a file
 //TODO Do even more error handling
 
 /**
@@ -27,7 +26,7 @@ template<typename T>
         std::stringstream ss(line);
         std::string prefix; // skip 'v'
         ss >> prefix >> vertex.x >> vertex.y >> vertex.z;
-        std::clog << "[INFO] Parsing vertex..." << std::endl;
+        logger.log("Parsing vertex...");
         return vertex;
     }
     else if constexpr (std::is_same_v<T, Normal>)
@@ -36,7 +35,7 @@ template<typename T>
         std::stringstream ss(line);
         std::string prefix; // skip 'vn'
         ss >> prefix >> normal.x >> normal.y >> normal.z;
-        std::clog << "[INFO] Parsing normal..." << std::endl;
+        logger.log("Parsing normal...");
         return normal;
     }
     else if constexpr (std::is_same_v<T, Texture>)
@@ -45,7 +44,7 @@ template<typename T>
         std::stringstream ss(line);
         std::string prefix; // skip 'vt'
         ss >> prefix >> texture.u >> texture.v;
-        std::clog << "[INFO] Parsing texture..." << std::endl;
+        logger.log("Parsing texture...");
         return texture;
     }
     else [[unlikely]] if constexpr (std::is_same_v<T, ParameterSpaceVertex>)
@@ -54,7 +53,7 @@ template<typename T>
         std::stringstream ss(line);
         std::string prefix; // skip 'vp'
         ss >> prefix >> psv.x >> psv.y >> psv.z;
-        std::clog << "[INFO] Parsing Parameter Space Vertex..." << std::endl;
+        logger.log("Parsing Parameter Space Vertex...");
         return psv;
     }
     else if constexpr (std::is_same_v<T, std::shared_ptr<Point>>)
@@ -79,12 +78,12 @@ template<typename T>
                 point.vertices.push_back(mesh.vertices.at(vIndex - 1));
                 point.textures.push_back(mesh.textures.at(tIndex - 1));
             } catch(const std::out_of_range& e) {
-                std::cerr << "[ERROR] Point Index out of bounds " << e.what() << std::endl;
+                logger.log(std::string("Point Index out of bounds ") + e.what(), logger.ERROR);
             }
         }
         std::shared_ptr<Point> pointPtr = std::make_shared<Point>(point);
 
-        std::clog << "[INFO] Parsing points..." << std::endl;
+        logger.log("Parsing points..");
         return pointPtr;
     }
     else if constexpr (std::is_same_v<T, std::shared_ptr<Line>>)
@@ -109,12 +108,12 @@ template<typename T>
                 _line.vertices.push_back(mesh.vertices.at(vIndex - 1));
                 _line.textures.push_back(mesh.textures.at(tIndex - 1));
             } catch(const std::out_of_range& e) {
-                std::cerr << "[ERROR] Line Index out of bounds " << e.what() << std::endl;
+                logger.log(std::string("Line Index out of bounds ") + e.what(), logger.ERROR);
             }
         }
         std::shared_ptr<Line> linePtr = std::make_shared<Line>(_line);
 
-        std::clog << "[INFO] Parsing lines..." << std::endl;
+        logger.log("Parsing lines...");
         return linePtr;
     }
     else if constexpr (std::is_same_v<T, Smoothing>)
@@ -131,10 +130,10 @@ template<typename T>
         } else if (!smoothness.empty() && std::all_of(smoothness.begin(), smoothness.end(), ::isdigit)) {
             smooth.smoothness = std::stoi(smoothness);
         } else {
-            std::cerr << "[WARNING] Smoothness level not specified! Set to 0." << std::endl;
+            logger.log("Smoothness level not specified! Set to 0.", logger.WARNING);
         }
 
-        std::clog << "[INFO] Parsing smoothness..." << std::endl;
+        logger.log("Parsing smoothness...");
         return smooth;
     }
     else if constexpr (std::is_same_v<T, Object>)
@@ -143,7 +142,7 @@ template<typename T>
         std::stringstream ss(line);
         std::string prefix; // skip 'o'
         ss >> prefix >> object.name;
-        std::clog << "[INFO] Parsing object..." << std::endl;
+        logger.log("Parsing object...");
         return object;
     }
     else if constexpr (std::is_same_v<T, Group>)
@@ -152,7 +151,7 @@ template<typename T>
         std::stringstream ss(line);
         std::string prefix; // skip 'g'
         ss >> prefix >> group.name;
-        std::clog << "[INFO] Parsing group..." << std::endl;
+        logger.log("Parsing group...");
         return group;
     }
     else if constexpr (std::is_same_v<T, std::shared_ptr<Face>>)
@@ -179,12 +178,12 @@ template<typename T>
                 face.textures.push_back(mesh.textures.at(tIndex - 1));
                 face.normals.push_back(mesh.normals.at(nIndex - 1));
             } catch(const std::out_of_range& e) {
-                std::cerr << "[ERROR] Face Index out of bounds " << e.what() << std::endl;
+                logger.log(std::string("Face Index out of bounds ") + e.what(), logger.ERROR);
             }
         }
         std::shared_ptr<Face> facePtr = std::make_shared<Face>(face);
 
-        std::clog << "[INFO] Parsing face..." << std::endl;
+        logger.log("Parsing face...");
         return facePtr;
     }
     else if constexpr (std::is_same_v<T, int>)
@@ -195,7 +194,7 @@ template<typename T>
         ss >> prefix;
         if(!(ss >> degree))
             throw std::runtime_error("Expected integer after 'deg'");
-        std::clog << "[INFO] Parsing degree..." << std::endl;
+        logger.log("Parsing degree...");
         return degree;
     }
     else if constexpr (std::is_same_v<T, std::shared_ptr<Curve>>)
@@ -218,13 +217,13 @@ template<typename T>
             curve.globalParameterRange.at(0) = std::stof(start);
             curve.globalParameterRange.at(1) = std::stof(end);
         } else [[unlikely]] if(!isDecimal(start) ^ !isDecimal(end)) {
-            std::cerr << "[ERROR] Only 1 Global Parameter Range attribute specified - both set to -1" << std::endl;
+            logger.log("Only 1 Global Parameter Range attribute specified - both set to -1", logger.WARNING);
             curve.globalParameterRange.at(0) = -1.0;
             curve.globalParameterRange.at(1) = -1.0;
             ss.clear();
             ss.seekg(0);
         } else {
-            std::cerr << "[ERROR] No Global Parameter Range attribute specified - both set to -1" << std::endl;
+            logger.log("No Global Parameter Range attribute specified - both set to -1", logger.WARNING);
             curve.globalParameterRange.at(0) = -1.0;
             curve.globalParameterRange.at(1) = -1.0;
             ss.clear();
@@ -242,13 +241,13 @@ template<typename T>
                 try{
                     curve.controlPoints.push_back(mesh.vertices.at(vIndex - 1));
                 } catch(const std::out_of_range& e) {
-                    std::cerr << "[ERROR] Curve Index out of bounds " << e.what() << std::endl;
+                    logger.log(std::string("Curve Index out of bounds ") + e.what(), logger.ERROR);
                 }
             }
         }
         std::shared_ptr<Curve> curvePtr = std::make_shared<Curve>(curve);
 
-        std::clog << "[INFO] Parsing curve..." << std::endl;
+        logger.log("Parsing curve...");
         return curvePtr;
     }
 
@@ -291,9 +290,9 @@ void ObjLoader::load(const std::string &path)
 {
     std::ifstream file(path);
     if(!file)
-        throw std::runtime_error("[EXCEPTION] Cannot open file.");
+        throw std::runtime_error("Cannot open .obj file.");
 
-    std::clog << "[INFO] Loading file: " << path << std::endl;
+    logger.log("Loading file: " + path);
     std::string line;
 
     Group* currentGroup = nullptr;
@@ -323,7 +322,7 @@ void ObjLoader::load(const std::string &path)
                 vertex = parseElement<Vertex>(line);
                 storeElement(vertex);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if(line[0] == VERTEX_PREFIX && line[1] == NORMAL_PREFIX) {
@@ -331,7 +330,7 @@ void ObjLoader::load(const std::string &path)
                 normal = parseElement<Normal>(line);
                 storeElement(normal);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if(line[0] == VERTEX_PREFIX && line[1] == TEXTURE_PREFIX) {
@@ -339,7 +338,7 @@ void ObjLoader::load(const std::string &path)
                 texture = parseElement<Texture>(line);
                 storeElement(texture);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if(line[0] == FACE_PREFIX) {
@@ -347,7 +346,7 @@ void ObjLoader::load(const std::string &path)
                 face = parseElement<std::shared_ptr<Face>>(line);
                 storeElement(face);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
 
             if(!currentGroup) {
@@ -395,7 +394,7 @@ void ObjLoader::load(const std::string &path)
                 group = parseElement<Group>(line);
                 storeElement(group);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
             currentGroup = &mesh.groups.back();
         }
@@ -404,7 +403,7 @@ void ObjLoader::load(const std::string &path)
                 object = parseElement<Object>(line);
                 storeElement(object);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
             currentObject = &mesh.objects.back();
         }
@@ -413,7 +412,7 @@ void ObjLoader::load(const std::string &path)
                 smoothing = parseElement<Smoothing>(line);
                 storeElement(smoothing);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
             currentSmoothing = &mesh.smooths.back();
         }
@@ -422,7 +421,7 @@ void ObjLoader::load(const std::string &path)
                 psv = parseElement<ParameterSpaceVertex>(line);
                 storeElement(psv);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if(line[0] == POINT_PREFIX) {
@@ -430,7 +429,7 @@ void ObjLoader::load(const std::string &path)
                 point = parseElement<std::shared_ptr<Point>>(line);
                 storeElement(point);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if(line[0] == LINE_PREFIX) {
@@ -438,7 +437,7 @@ void ObjLoader::load(const std::string &path)
                 _line = parseElement<std::shared_ptr<Line>>(line);
                 storeElement(_line);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if (line.rfind(CURVE_PREFIX, 0) == 0) {
@@ -447,19 +446,20 @@ void ObjLoader::load(const std::string &path)
                 storeElement(curve);
                 curve.value()->degree = degree.value();
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
         else if (line.rfind(DEGREE_PREFIX, 0) == 0) {
             try {
                 degree = parseElement<int>(line);
             } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
+                logger.log(e.what(), logger.ERROR);
             }
         }
     }
 
-    std::clog << "[INFO] Finished Loading." << std::endl;
+    logger.log("Finished Loading.");
+    logger.logFinish();
 }
 
 /* DEPRECATED
