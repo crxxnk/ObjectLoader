@@ -62,7 +62,7 @@ struct Smoothing
 struct Curve
 {
     std::string type;
-    int degree;
+    int degree = 3;
     std::vector<Vertex> controlPoints;
     std::vector<float> parameters;
     std::array<float, 2> globalParameterRange;

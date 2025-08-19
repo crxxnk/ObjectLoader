@@ -48,6 +48,7 @@ int main()
         for (const auto &v : c->controlPoints)
             std::cout << "Vertex: " << v.x << " " << v.y << " " << v.z << std::endl;
         std::cout << "Global parameter range from " << c->globalParameterRange.at(0) << " to " << c->globalParameterRange.at(1) << std::endl;
+        std::cout << "Degree: " << c->degree << std::endl;
     }
 
     return 0;

@@ -4,8 +4,8 @@
 //TODO Handle points and lines with missing texture indices
 //TODO Add v, vt, vn, vp, l, p... etc in objects and groups
 //TODO Put every parser in a function and call it in parseElement
-//TODO Make start end optional in parseCurve
-//TODO Add degree and curve type
+//TODO Add curve type and additional parameters
+//TODO Add logging in a file
 //TODO Do even more error handling
 
 /**
@@ -62,7 +62,6 @@ template<typename T>
         Point point;
         std::stringstream ss(line);
         std::string prefix; // skip 'p'
-        std::string data;
         char slash;
         int vertexIndex, textureIndex;
 
@@ -93,7 +92,6 @@ template<typename T>
         Line _line;
         std::stringstream ss(line);
         std::string prefix; // skip 'p'
-        std::string data;
         char slash;
         int vertexIndex, textureIndex;
 
@@ -163,7 +161,6 @@ template<typename T>
         Face face;
         std::stringstream ss(line);
         std::string prefix; // skip 'f'
-        std::string data;
         char slash;
         int vertexIndex, textureIndex, normalIndex;
 
@@ -190,19 +187,50 @@ template<typename T>
         std::clog << "[INFO] Parsing face..." << std::endl;
         return facePtr;
     }
+    else if constexpr (std::is_same_v<T, int>)
+    {
+        int degree;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'deg'
+        ss >> prefix;
+        if(!(ss >> degree))
+            throw std::runtime_error("Expected integer after 'deg'");
+        std::clog << "[INFO] Parsing degree..." << std::endl;
+        return degree;
+    }
     else if constexpr (std::is_same_v<T, std::shared_ptr<Curve>>)
     {
         Curve curve;
         std::stringstream ss(line);
         std::string prefix; // skip 'curv'
-        std::string data;
-        char slash;
         int vertexIndex;
-        float start, end;
+        std::string start, end;
 
-        ss >> prefix >> start >> end;
-        curve.globalParameterRange.at(0) = start;
-        curve.globalParameterRange.at(1) = end;
+        ss >> prefix;
+
+        ss >> start >> end;
+
+        auto isDecimal = [](const std::string& s) {
+            return s.find('.') != std::string::npos;
+        };
+
+        if (isDecimal(start) && isDecimal(end)) {
+            curve.globalParameterRange.at(0) = std::stof(start);
+            curve.globalParameterRange.at(1) = std::stof(end);
+        } else [[unlikely]] if(!isDecimal(start) ^ !isDecimal(end)) {
+            std::cerr << "[ERROR] Only 1 Global Parameter Range attribute specified - both set to -1" << std::endl;
+            curve.globalParameterRange.at(0) = -1.0;
+            curve.globalParameterRange.at(1) = -1.0;
+            ss.clear();
+            ss.seekg(0);
+        } else {
+            std::cerr << "[ERROR] No Global Parameter Range attribute specified - both set to -1" << std::endl;
+            curve.globalParameterRange.at(0) = -1.0;
+            curve.globalParameterRange.at(1) = -1.0;
+            ss.clear();
+            ss.seekg(0);
+        }
+
         std::string vertexData;
 
         while(ss >> vertexData)
@@ -210,12 +238,12 @@ template<typename T>
             int vIndex = 0;
             std::stringstream vss(vertexData);
 
-            vss >> vIndex; //! make start end optional
-
-            try{
-                curve.controlPoints.push_back(mesh.vertices.at(vIndex - 1));
-            } catch(const std::out_of_range& e) {
-                std::cerr << "[ERROR] Curve Index out of bounds " << e.what() << std::endl;
+            if(vss >> vIndex) {
+                try{
+                    curve.controlPoints.push_back(mesh.vertices.at(vIndex - 1));
+                } catch(const std::out_of_range& e) {
+                    std::cerr << "[ERROR] Curve Index out of bounds " << e.what() << std::endl;
+                }
             }
         }
         std::shared_ptr<Curve> curvePtr = std::make_shared<Curve>(curve);
@@ -283,6 +311,7 @@ void ObjLoader::load(const std::string &path)
     std::optional<Group> group;
     std::optional<Object> object;
     std::optional<Smoothing> smoothing;
+    std::optional<int> degree;
 
     // auto x = parseElement<int>("v 0.0 0.0 0.0");
 
@@ -416,6 +445,14 @@ void ObjLoader::load(const std::string &path)
             try {
                 curve = parseElement<std::shared_ptr<Curve>>(line);
                 storeElement(curve);
+                curve.value()->degree = degree.value();
+            } catch (const std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        else if (line.rfind(DEGREE_PREFIX, 0) == 0) {
+            try {
+                degree = parseElement<int>(line);
             } catch (const std::exception &e) {
                 std::cerr << e.what() << std::endl;
             }
