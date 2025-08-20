@@ -47,8 +47,11 @@ p 1/1
 l 1/1 2/2 3/3
 p 1/1 2/2 3/3
 l 2/2
+cstype rat bezier
 deg 2
 curv 1 2 3 4
+parm 0.2 0.3 0.4 0.5
 curv 3 2 1 4
 deg 1
-curve 1 2 6 2
+cstype bezier
+curv 1 2 6 2

@@ -63,9 +63,11 @@ struct Curve
 {
     std::string type;
     int degree = 3;
+    int vertexCount;
     std::vector<Vertex> controlPoints;
     std::vector<float> parameters;
     std::array<float, 2> globalParameterRange;
+    bool hasParameters = false;
 };
 
 struct Mesh

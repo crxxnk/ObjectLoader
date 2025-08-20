@@ -4,7 +4,10 @@
 //TODO Handle points and lines with missing texture indices
 //TODO Add v, vt, vn, vp, l, p... etc in objects and groups
 //TODO Put every parser in a function and call it in parseElement
+//TODO Make the degree default value changeable and change it in parseDegree
 //TODO Add curve type and additional parameters
+//TODO Handle invalid curves (curv with nothing else)
+//TODO Handle invalid indices in faces curves etc
 //TODO Do even more error handling
 
 /**
@@ -194,8 +197,62 @@ template<typename T>
         ss >> prefix;
         if(!(ss >> degree))
             throw std::runtime_error("Expected integer after 'deg'");
+        if(degree < 1) {
+            throw std::runtime_error("Curve degree cannot be less than 1 - set to default value(3)");
+            degree = 3;
+        }
         logger.log("Parsing degree...");
         return degree;
+    }
+    else if constexpr (std::is_same_v<T, std::string>)
+    {
+        std::string type;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'cstype'
+        ss >> prefix;
+        
+        std::string first;
+        if (!(ss >> first))
+            throw std::runtime_error("Expected a curve-surface type after 'cstype'");
+
+        if (first == "rat") {
+            std::string second;
+            if (!(ss >> second))
+                throw std::runtime_error("Expected curve type after 'rat'");
+            type = "rat " + second;
+        } else
+            type = first;
+
+        if(type != "bezier" && type != "rat bezier" && type != "b-spline" && type != "rat b-spline" && type != "cardinal" && type != "rat cardinal" && type != "taylor" && type != "rat taylor")
+            throw std::runtime_error("Expected any of the follwing curve-surface types after 'cstype':\nbezier\nrat bezier\nb-spline\nrat b-spline\ncardinal\nrat cardinal\ntaylor\nrat taylor");
+        logger.log("Parsing curve-surface type...");
+        return type;
+    }
+    else if constexpr (std::is_same_v<T, std::vector<float>>)
+    {
+        std::vector<float> params;
+        float value;
+        std::stringstream ss(line);
+        std::string prefix; // skip 'parm'
+        ss >> prefix;
+
+        if(!(ss >> value)) {
+            ss.clear();
+            ss.seekg(0);
+            throw std::runtime_error("Expected a float parameter between 0.0 and 1.0 for each vertex in the curve above after 'parm'");
+        } else
+            params.push_back(value);
+
+        while(ss >> value) {
+            if(value < 0.0 || value > 1.0) {
+                std::fill(params.begin(), params.end(), 0.0);
+                throw std::runtime_error("Parameter must be between 0.0 and 1.0.");
+            }
+            params.push_back(value);
+        }
+                
+        logger.log("Parsing parameters...");
+        return params;
     }
     else if constexpr (std::is_same_v<T, std::shared_ptr<Curve>>)
     {
@@ -240,6 +297,7 @@ template<typename T>
             if(vss >> vIndex) {
                 try{
                     curve.controlPoints.push_back(mesh.vertices.at(vIndex - 1));
+                    curve.vertexCount = curve.controlPoints.size();
                 } catch(const std::out_of_range& e) {
                     logger.log(std::string("Curve Index out of bounds ") + e.what(), logger.ERROR);
                 }
@@ -311,6 +369,8 @@ void ObjLoader::load(const std::string &path)
     std::optional<Object> object;
     std::optional<Smoothing> smoothing;
     std::optional<int> degree;
+    std::optional<std::string> cstype;
+    std::optional<std::vector<float>> parameters;
 
     // auto x = parseElement<int>("v 0.0 0.0 0.0");
 
@@ -424,7 +484,7 @@ void ObjLoader::load(const std::string &path)
                 logger.log(e.what(), logger.ERROR);
             }
         }
-        else if(line[0] == POINT_PREFIX) {
+        else if (line[0] == POINT_PREFIX && line[1] == ' ') {
             try {
                 point = parseElement<std::shared_ptr<Point>>(line);
                 storeElement(point);
@@ -445,6 +505,8 @@ void ObjLoader::load(const std::string &path)
                 curve = parseElement<std::shared_ptr<Curve>>(line);
                 storeElement(curve);
                 curve.value()->degree = degree.value();
+                curve.value()->type = cstype.value();
+                curve.value()->hasParameters = false;
             } catch (const std::exception &e) {
                 logger.log(e.what(), logger.ERROR);
             }
@@ -452,6 +514,32 @@ void ObjLoader::load(const std::string &path)
         else if (line.rfind(DEGREE_PREFIX, 0) == 0) {
             try {
                 degree = parseElement<int>(line);
+            } catch (const std::exception &e) {
+                logger.log(e.what(), logger.ERROR);
+            }
+        }
+        else if (line.rfind(CUR_SUR_TYPE_PREFIX, 0) == 0) {
+            try {
+                cstype = parseElement<std::string>(line);
+            } catch (const std::exception &e) {
+                logger.log(e.what(), logger.ERROR);
+            }
+        }
+        else if (line.rfind(PARAMETER_PREFIX, 0) == 0) {
+            try {
+                parameters = parseElement<std::vector<float>>(line);
+                if (curve.has_value()) {
+                    if(curve.value()->vertexCount == parameters.value().size()) {
+                        curve.value()->hasParameters = true;
+                        curve.value()->parameters = parameters.value();
+                    } else [[unlikely]] {
+                        curve.value()->hasParameters = false;
+                        logger.log("Parameter list does not match the number of control points", logger.ERROR);
+                    }
+                } else [[unlikely]] {
+                    logger.log("Cannot assign parameters: no curve defined yet", logger.ERROR);
+                }
+                
             } catch (const std::exception &e) {
                 logger.log(e.what(), logger.ERROR);
             }

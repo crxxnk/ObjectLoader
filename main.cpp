@@ -49,6 +49,13 @@ int main()
             std::cout << "Vertex: " << v.x << " " << v.y << " " << v.z << std::endl;
         std::cout << "Global parameter range from " << c->globalParameterRange.at(0) << " to " << c->globalParameterRange.at(1) << std::endl;
         std::cout << "Degree: " << c->degree << std::endl;
+        std::cout << "Type: " << c->type << std::endl;
+        std::cout << "Parameters: " << std::endl;
+        if(c->hasParameters) {
+            for (const auto &p : c->parameters)
+                std::cout << p << std::endl;
+        } else
+            std::cout << "Curve does not contain any additional parameters" << std::endl;
     }
 
     return 0;
