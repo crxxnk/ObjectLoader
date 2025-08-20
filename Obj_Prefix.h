@@ -14,8 +14,8 @@ constexpr char GROUP_PREFIX = 'g';
 constexpr char OBJECT_PREFIX = 'o';
 constexpr char SMOOTHING_PREFIX = 's';
 constexpr char MERGING_GROUP_PREFIX[3] = "mg";
-constexpr char COLOR_INTERPOLATION_PREFIX[8] = "cinterp";
-constexpr char DISSOLVE_INTERPOLATION_PREFIX[8] = "dinterp";
+constexpr char COLOR_INTERPOLATION_PREFIX[9] = "c_interp";
+constexpr char DISSOLVE_INTERPOLATION_PREFIX[9] = "d_interp";
 
 //* Freeform Curves & Surfaces
 constexpr char CURVE_PREFIX[5] = "curv";

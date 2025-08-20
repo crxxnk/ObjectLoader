@@ -29,4 +29,6 @@ public:
     const std::vector<std::shared_ptr<Curve>> &getCurves() const { return this->mesh.curves; }
     const std::vector<Group> &getGroups() const { return this->mesh.groups; }
     const std::vector<Object> &getObjects() const { return this->mesh.objects; }
+    const bool &getColorInterp() const { return this->mesh.c_interp; }
+    const bool &getDissolveInterp() const { return this->mesh.d_interp; }
 };

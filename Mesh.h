@@ -68,7 +68,10 @@ struct Curve
     std::vector<float> parameters;
     std::array<float, 2> globalParameterRange;
     bool hasParameters = false;
+    // std::string interpMethod;
+    // bool hasInterpMethod = false;
 };
+
 
 struct Mesh
 {
@@ -83,4 +86,6 @@ struct Mesh
     std::vector<Group> groups;
     std::vector<Object> objects;
     std::vector<Smoothing> smooths;
+    bool c_interp = false;
+    bool d_interp = false;
 };
