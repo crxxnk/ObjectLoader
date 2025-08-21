@@ -24,3 +24,14 @@ Clone the repository and include in your project:
 
 ```bash
 git clone https://github.com/crxxnk/ObjectLoader.git
+```
+
+## TODO
+- Handle faces with missing texture/normal indices
+- Handle points and lines with missing texture indices
+- Add v, vt, vn, vp, l, p... etc in objects and groups
+- Put every parser in a function and call it in parseElement
+- Make the degree default value changeable and change it in parseDegree
+- Fix and research about d_interp and c_interp
+- Handle invalid indices in faces curves etc
+- Do even more error handling

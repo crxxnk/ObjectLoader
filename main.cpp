@@ -58,8 +58,8 @@ int main()
             std::cout << "Curve does not contain any additional parameters" << std::endl;
         
         }
-    std::cout << "Color Interpolation: " << loader->getColorInterp() << std::endl;
-    std::cout << "Dissolve Interpolation: " << loader->getDissolveInterp() << std::endl;
+    // std::cout << "Color Interpolation: " << loader->getColorInterp() << std::endl;
+    // std::cout << "Dissolve Interpolation: " << loader->getDissolveInterp() << std::endl;
 
     return 0;
 }

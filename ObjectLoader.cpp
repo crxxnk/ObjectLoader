@@ -5,9 +5,7 @@
 //TODO Add v, vt, vn, vp, l, p... etc in objects and groups
 //TODO Put every parser in a function and call it in parseElement
 //TODO Make the degree default value changeable and change it in parseDegree
-//TODO Add curve type and additional parameters
 //TODO Fix and research about d_interp and c_interp
-//TODO Handle invalid curves (curv with nothing else)
 //TODO Handle invalid indices in faces curves etc
 //TODO Do even more error handling
 
@@ -348,32 +346,71 @@ template<typename T>
         Curve curve;
         std::stringstream ss(line);
         std::string prefix; // skip 'curv'
+        std::string temp;
         int vertexIndex;
-        std::string start, end;
+        std::string glbParmRange1, glbParmRange2;
 
         ss >> prefix;
 
-        ss >> start >> end;
+        if(!(ss >> temp))
+            throw std::runtime_error("Expected a curve definition after 'curv'.");
+        try {
+            float f = std::stof(temp);
+        } catch (const std::exception&) {
+            throw std::runtime_error("Non-numeric value found after 'curv': expected 'float' or 'int'.");
+        }
+
+        std::string token;
+        while (ss >> token) {
+            try {
+                float f = std::stof(token);
+            } catch (const std::exception&) {
+                throw std::runtime_error("Non-numeric value found after 'curv': expected 'float' or 'int'.");
+            }
+        }
+
+        ss.clear();
+        ss.seekg(0);
+
+        ss >> prefix;
+
+        ss >> glbParmRange1 >> glbParmRange2;
 
         auto isDecimal = [](const std::string& s) {
             return s.find('.') != std::string::npos;
         };
 
-        if (isDecimal(start) && isDecimal(end)) {
-            curve.globalParameterRange.at(0) = std::stof(start);
-            curve.globalParameterRange.at(1) = std::stof(end);
-        } else [[unlikely]] if(!isDecimal(start) ^ !isDecimal(end)) {
-            logger.log("Only 1 Global Parameter Range attribute specified - both set to -1", logger.WARNING);
+        if (isDecimal(glbParmRange1) && isDecimal(glbParmRange2)) {
+            float gpr = std::stof(glbParmRange1);
+            float _gpr = std::stof(glbParmRange2);
+
+            if(gpr < 0.0 || gpr > 1.0 || _gpr > 1.0 || _gpr < 0.0) {
+                logger.log("Global parameter range must be between 0.0 and 1.0: both set to -1.0.", logger.WARNING);
+                gpr = -1.0;
+                _gpr = -1.0;
+            } else if(gpr > _gpr) {
+                logger.log("First global parameter range attribute must be less than the second: both set to -1.0.", logger.WARNING);
+                gpr = -1.0;
+                _gpr = -1.0;
+            }
+
+            curve.globalParameterRange.at(0) = gpr;
+            curve.globalParameterRange.at(1) = _gpr;
+        } else [[unlikely]] if(!isDecimal(glbParmRange1) ^ !isDecimal(glbParmRange2)) {
+            logger.log("Only 1 global parameter range attribute specified: both set to -1.0.", logger.WARNING);
             curve.globalParameterRange.at(0) = -1.0;
             curve.globalParameterRange.at(1) = -1.0;
             ss.clear();
             ss.seekg(0);
+            ss >> prefix;
+            ss >> temp;
         } else {
-            logger.log("No Global Parameter Range attribute specified - both set to -1", logger.WARNING);
+            logger.log("No global parameter range attribute specified: both set to -1.0.", logger.WARNING);
             curve.globalParameterRange.at(0) = -1.0;
             curve.globalParameterRange.at(1) = -1.0;
             ss.clear();
             ss.seekg(0);
+            ss >> prefix;
         }
 
         std::string vertexData;
