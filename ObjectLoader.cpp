@@ -1,4 +1,5 @@
 #include "ObjectLoader.h"
+#include "MaterialLoader.h"
 
 //TODO Handle faces with missing texture/normal indices
 //TODO Handle points and lines with missing texture indices
@@ -217,15 +218,15 @@ template<typename T>
     
     //* Freeform Curves & Surfaces
     
-    //? Curve/Surface type
+    //? Curve/Surface type & Material Loading
     else if constexpr (std::is_same_v<T, std::string>)
     {
         std::stringstream ss(line);
         std::string prefix; // skip 'cstype'
         ss >> prefix;
         
-        // if(prefix == "cstype")
-        // {
+        if(prefix == "cstype")
+        {
             std::string type;
             std::string first;
             if (!(ss >> first))
@@ -243,7 +244,14 @@ template<typename T>
                 throw std::runtime_error("Expected any of the following curve-surface types after 'cstype':\nbezier\nrat bezier\nb-spline\nrat b-spline\ncardinal\nrat cardinal\ntaylor\nrat taylor");
             logger.log("Parsing curve-surface type...");
             return type;
-        // }
+        }
+        else if(prefix == "mtllib")
+        {
+            std::string path;
+            if(!(ss >> path))
+                throw std::runtime_error("Expected a .mtl file after mtllib.");
+            return path;
+        }
 
         //! Dont use
         //? Curve interpolation method
@@ -259,7 +267,7 @@ template<typename T>
         //     return method;
         // }
 
-        // return ""; // Trigger warning
+        return ""; // Trigger warning
     }
 
     //? Color & Dissolve Interpolation
@@ -473,6 +481,8 @@ void ObjLoader::storeElement(const std::optional<T> &element)
 void ObjLoader::load(const std::string &path)
 {
     std::ifstream file(path);
+    if(!path.ends_with(".obj"))
+        throw std::invalid_argument("File '" + path + "' is not an OBJ file.");
     if(!file)
         throw std::runtime_error("Cannot open .obj file.");
 
@@ -497,6 +507,10 @@ void ObjLoader::load(const std::string &path)
     std::optional<int> degree;
     std::optional<std::string> cstype;
     std::optional<std::vector<float>> parameters;
+
+    std::optional<std::string> materialPath;
+    MtlLoader mtlLoader;
+
     // bool c_interp = false;
     // bool d_interp = false;
 
@@ -670,6 +684,14 @@ void ObjLoader::load(const std::string &path)
                     logger.log("Cannot assign parameters: no curve defined yet", logger.ERROR);
                 }
                 
+            } catch (const std::exception &e) {
+                logger.log(e.what(), logger.ERROR);
+            }
+        }
+        else if (line.rfind(MATERIAL_LIB_PREFIX, 0) == 0) {
+            try {
+                materialPath = parseElement<std::string>(line);
+                mtlLoader.load(materialPath.value());
             } catch (const std::exception &e) {
                 logger.log(e.what(), logger.ERROR);
             }

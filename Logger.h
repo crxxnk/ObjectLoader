@@ -35,3 +35,5 @@ public:
     int getDebugMessages() { return debugMessages; }
     int getInfoMessages() { return infoMessages; }
 };
+
+extern Logger &logger;

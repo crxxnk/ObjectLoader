@@ -1,3 +1,5 @@
+#pragma once
+
 // + vp - PARAMETER SPACE VERTEX PREFIX
 //* Geometry
 constexpr char VERTEX_PREFIX = 'v';
@@ -32,6 +34,7 @@ constexpr char CUR_SUR_END_PREFIX[4] = "end";
 //* Materials(.mtl)
 constexpr char MATERIAL_LIB_PREFIX[7] = "mtllib";
 constexpr char MATERIAL_USE_PREFIX[7] = "usemtl";
+constexpr char NEW_MATERIAL[7] = "newmtl";
 constexpr char SHADOW_CASTING_G_PREFIX[11] = "shadow_obj";
 constexpr char RAY_TRACING_G_PREFIX[10] = "trace_obj";
 

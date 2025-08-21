@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "Material.h"
 
 struct Vertex
 {
@@ -72,6 +73,34 @@ struct Curve
     // bool hasInterpMethod = false;
 };
 
+struct Curve2D
+{
+    std::array<float, 2> degree;
+
+};
+
+struct Material
+{
+    std::string name;
+    Color ambientColor;
+    Color diffuseColor;
+    Color emissiveColor;
+    Color specularColor;
+    Color transmissionFilterColor;
+    AmbientMap ambientMap;
+    DiffuseMap diffuseMap;
+    SpecularMap specularMap;
+    ShininessMap shininessMap;
+    DissolveMap dissolveMap;
+    BumpMap bumpMap;
+    Decal decal;
+    float shininess; // 0-1000
+    float sharpness;
+    float opticalDensity; // 0.001-10.0
+    float dissolve; // 0.0-1.0
+    float transparency = 1.0 - dissolve;
+    int illumModel;
+};
 
 struct Mesh
 {
@@ -86,6 +115,7 @@ struct Mesh
     std::vector<Group> groups;
     std::vector<Object> objects;
     std::vector<Smoothing> smooths;
+    std::vector<Material> materials;
     bool c_interp = false;
     bool d_interp = false;
 };

@@ -1,0 +1,7 @@
+AmbientColor: Defines the color that the material reflects under ambient light
+
+DiffuseColor: Diffuse reflection color (the “main color” of the object under direct light).
+
+SpecularColor: Color of the specular highlight. Usually white for shiny materials.
+
+EmissiveColor: The color the material emits itself (like glowing).

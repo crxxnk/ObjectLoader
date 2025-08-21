@@ -71,3 +71,5 @@ Logger::~Logger()
     if (logfile.is_open())
         logfile.close();
 }
+
+Logger &logger = Logger::getInstance();

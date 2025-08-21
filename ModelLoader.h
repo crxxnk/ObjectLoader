@@ -16,9 +16,9 @@ class ModelLoader
 {
 public:
     Mesh mesh;
-    Logger &logger = Logger::getInstance();
     virtual ~ModelLoader() = default;
     virtual void load(const std::string &path) = 0;
+    // virtual void loadMaterial(const std::string &path) = 0;
     const std::vector<Vertex> &getVertices() const { return this->mesh.vertices; }
     const std::vector<Normal> &getNormals() const { return this->mesh.normals; }
     const std::vector<Texture> &getTextures() const { return this->mesh.textures; }

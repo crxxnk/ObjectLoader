@@ -1,5 +1,6 @@
 #pragma once
 #include "ModelLoader.h"
+#include "MaterialLoader.cpp"
 #include "Obj_Prefix.h"
 
 struct Vertex;
@@ -11,6 +12,7 @@ class ObjLoader : public ModelLoader
 {
 public:
     void load(const std::string &path) override;
+    // void loadMaterial(const std::string &path) override;
     // void parseVertex(const std::string &line);
     // void parseNormal(const std::string &line);
     // void parseTexture(const std::string &line);
